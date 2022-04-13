@@ -16,17 +16,8 @@ exports.signup = async (req, res) => {
       password: bcryptPwd,
     });
 
-    const saved = await user.save();
-    if (!saved) {
-      return res.status.json(400).json({ message: error });
-      //comment je peux le tester pour être sûr que ça marche??
-    }
+    await user.save();
     res.status(201).json({ message: "Utilisateur créé !" });
-
-    // user
-    //   .save()
-    //   .then(() => res.status(201).json({ message: "Utilisateur créé !" }))
-    //   .catch((error) => res.status(400).json({ message: error }));
   } catch (error) {
     res.status(500).json({ error });
   }
