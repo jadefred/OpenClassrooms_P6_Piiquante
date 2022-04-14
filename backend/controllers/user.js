@@ -11,12 +11,11 @@ const User = require("../models/user");
 exports.signup = async (req, res) => {
   try {
     const bcryptPwd = await bcrypt.hash(req.body.password, saltRounds);
-    const user = new User({
+
+    await User.create({
       email: req.body.email,
       password: bcryptPwd,
     });
-
-    await user.save();
     res.status(201).json({ message: "Utilisateur créé !" });
   } catch (error) {
     res.status(500).json({ error });

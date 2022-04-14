@@ -8,6 +8,7 @@ dotenv.config();
 const mongoose = require("mongoose");
 
 const userRoutes = require("./routes/user");
+const sauceRoutes = require("./routes/sauce");
 
 mongoose
   .connect(process.env.CONNECTIONSTRING, {
@@ -31,5 +32,6 @@ app.use((req, res, next) => {
 });
 
 app.use("/api/auth", userRoutes);
+app.use("/api/sauces", sauceRoutes);
 
 module.exports = app;
