@@ -9,7 +9,14 @@ exports.getAllSauces = (req, res, next) => {
 
 exports.createSauce = (req, res, next) => {};
 
-exports.getOneSauce = (req, res, next) => {};
+exports.getOneSauce = (req, res, next) => {
+  Sauce.findById(req.params.id, (err, data) => {
+    if (err) {
+      res.status(500).json({ error });
+    }
+    res.status(200).json(data);
+  });
+};
 
 exports.modifySauce = (req, res, next) => {};
 
