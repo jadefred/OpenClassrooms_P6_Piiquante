@@ -12,12 +12,8 @@ const sauceSchema = mongoose.Schema({
   heat: { type: Number, require: true },
   likes: { type: Number, default: 0 },
   dislikes: { type: Number, default: 0 },
-  usersLiked: [
-    { type: mongoose.Schema.Types.ObjectId, ref: "User", default: undefined },
-  ],
-  usersDisliked: [
-    { type: mongoose.Schema.Types.ObjectId, ref: "User", default: undefined },
-  ],
+  usersLiked: [String],
+  usersDisliked: [[String]],
   //type & ref => try to get users schema from mongoDB, default => to avoid having empty [] when no value is assigned
 });
 
