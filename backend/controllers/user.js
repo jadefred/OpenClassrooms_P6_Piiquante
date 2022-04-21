@@ -18,7 +18,7 @@ exports.signup = async (req, res) => {
     });
     res.status(201).json({ message: "Utilisateur créé !" });
   } catch (error) {
-    res.status(500).json({ error });
+    res.status(500).json({ message: error });
   }
 };
 
@@ -40,6 +40,6 @@ exports.login = async (req, res) => {
       }),
     });
   } catch (error) {
-    res.status(500).json(error);
+    res.status(500).json({ message: error });
   }
 };
