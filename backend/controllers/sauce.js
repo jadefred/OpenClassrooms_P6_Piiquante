@@ -38,9 +38,15 @@ exports.getOneSauce = (req, res, next) => {
 exports.modifySauce = (req, res, next) => {
   let sauceObj = {};
 
+  //check if req.file exist
+  //if yes => delete old image in server by search sauce's id, save new req.body and image url to sauceObj
+  //if no => get all req.body and save to sauceObj
   function checkFile() {
     if (req.file) {
       Sauce.findById({ _id: req.params.id }, (err, data) => {
+        if (err) {
+          res.status(500).json({ message: err });
+        }
         const lastPartUrl = data.imageUrl.split("/").pop();
         fs.unlink(`images/${lastPartUrl}`, (err) => {
           if (err) {
@@ -62,11 +68,31 @@ exports.modifySauce = (req, res, next) => {
 
   checkFile();
 
+  //update DB
   Sauce.updateOne({ _id: req.params.id }, { ...sauceObj })
-    .then(() => res.status(200).json("sauce mise à jour"))
+    .then(() => res.status(200).json("la sauce a été mise à jour"))
     .catch((err) => res.status(500).json({ message: err }));
 };
 
-exports.deleteSauce = (req, res, next) => {};
+exports.deleteSauce = (req, res, next) => {
+  //find image url by sauce's id, then delete its photo in server
+  Sauce.findById({ _id: req.params.id }, (err, data) => {
+    if (err) {
+      res.status(500).json({ message: err });
+    }
+    const lastPartUrl = data.imageUrl.split("/").pop();
+    fs.unlink(`images/${lastPartUrl}`, (err) => {
+      if (err) {
+        console.log("failed to delete local image:" + err);
+      } else {
+        console.log("successfully deleted local image");
+      }
+    });
+  });
+
+  Sauce.deleteOne({ _id: req.params.id })
+    .then(() => res.status(204).json({ message: "la sauce à été supprimé" }))
+    .catch((err) => res.status(500).json({ message: err }));
+};
 
 exports.likeSauce = (req, res, next) => {};
