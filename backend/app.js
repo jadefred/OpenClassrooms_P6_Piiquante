@@ -1,9 +1,11 @@
 const express = require("express");
 const app = express();
-app.use(express.json());
-
 const dotenv = require("dotenv");
 dotenv.config();
+const path = require("path");
+
+app.use(express.urlencoded({ extended: true })); //was commented
+app.use(express.json());
 
 const mongoose = require("mongoose");
 
@@ -30,6 +32,8 @@ app.use((req, res, next) => {
   );
   next();
 });
+
+app.use("/images", express.static(path.join(__dirname, "images")));
 
 app.use("/api/auth", userRoutes);
 app.use("/api/sauces", sauceRoutes);

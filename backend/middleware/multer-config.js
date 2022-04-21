@@ -1,25 +1,23 @@
 const multer = require("multer");
 
 const storage = multer.diskStorage({
-  destination: (req, res, callabck) => {
-    callabck(null, "images");
+  destination: function (req, file, cb) {
+    cb(null, "images");
   },
-  filename: (req, file, callback) => {
-    const userFileName = file.originalname.split(" ").join("_");
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    callback(null, userFileName + "." + uniqueSuffix);
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + "--" + file.originalname);
   },
 });
 
-const fileFilter = (req, res, callback) => {
+const fileFilter = (req, file, cb) => {
   if (
     file.mimetype.includes("jpeg") ||
     file.mimetype.includes("png") ||
     file.mimetype.includes("jpg")
   ) {
-    callback(null, true);
+    cb(null, true);
   } else {
-    callback(null, false);
+    cb(null, false);
   }
 };
 
