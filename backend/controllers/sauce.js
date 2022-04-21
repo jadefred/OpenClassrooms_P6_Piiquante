@@ -8,8 +8,20 @@ exports.getAllSauces = (req, res, next) => {
 };
 
 exports.createSauce = (req, res, next) => {
-  //console.log(JSON.parse(req.body.sauce));
-  console.log(req.body);
+  const sauceObj = JSON.parse(req.body.sauce);
+  const imageUrl = `${req.protocol}://${req.get("host")}/${req.file.path}`;
+
+  const newSauce = new Sauce({
+    ...sauceObj,
+    imageUrl: imageUrl,
+    likes: 0,
+    dislikes: 0,
+  });
+
+  newSauce
+    .save()
+    .then(() => res.status(201).json("Sauce enregistrée !"))
+    .catch((err) => res.status(500).json({ message: err }));
 };
 
 exports.getOneSauce = (req, res, next) => {
