@@ -1,7 +1,6 @@
 const Sauce = require("../models/sauce");
 const User = require("../models/user");
 const fs = require("fs");
-const path = require("path");
 
 exports.getAllSauces = (req, res, next) => {
   Sauce.find()
@@ -95,4 +94,29 @@ exports.deleteSauce = (req, res, next) => {
     .catch((err) => res.status(500).json({ message: err }));
 };
 
-exports.likeSauce = (req, res, next) => {};
+exports.likeSauce = (req, res, next) => {
+  const like = req.body.like;
+  const userId = req.body.userId;
+  const sauceId = req.params.id;
+
+  Sauce.findById({ _id: sauceId }, (err, data) => {
+    switch (like) {
+      //if like is positive 1, add 1 like and push user's id to usersLiked array, then update DB
+      case 1:
+        Sauce.updateOne(
+          { _id: sauceId },
+          { $push: { usersLiked: userId }, likes: data.likes + 1 }
+        )
+          .then(() =>
+            res.status(200).json({ message: "les likes sont été mis à jour" })
+          )
+          .catch((err) => {
+            res.status(500).json({ message: err });
+          });
+        break;
+
+      default:
+        console.log("action undefined");
+    }
+  });
+};
