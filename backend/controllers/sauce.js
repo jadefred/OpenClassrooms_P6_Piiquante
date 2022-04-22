@@ -1,6 +1,7 @@
 const Sauce = require("../models/sauce");
 const User = require("../models/user");
 const fs = require("fs");
+const mongoose = require("mongoose");
 
 exports.getAllSauces = (req, res, next) => {
   Sauce.find()
@@ -94,29 +95,127 @@ exports.deleteSauce = (req, res, next) => {
     .catch((err) => res.status(500).json({ message: err }));
 };
 
-exports.likeSauce = (req, res, next) => {
+exports.likeSauce = async (req, res, next) => {
   const like = req.body.like;
   const userId = req.body.userId;
   const sauceId = req.params.id;
 
-  Sauce.findById({ _id: sauceId }, (err, data) => {
+  console.log(like);
+
+  const sauceObj = await Sauce.findById({ _id: sauceId }).catch((err) =>
+    res.status(500).json({ message: err })
+  );
+
+  const userLikedBefore = sauceObj.usersLiked.includes(userId);
+  const userDislikedBefore = sauceObj.usersDisliked.includes(userId);
+
+  console.log(userLikedBefore);
+  console.log(userDislikedBefore);
+
+  //if user liked this sauce already
+  if (userLikedBefore === true) {
     switch (like) {
-      //if like is positive 1, add 1 like and push user's id to usersLiked array, then update DB
+      //user wanna like it again => reject
       case 1:
-        Sauce.updateOne(
-          { _id: sauceId },
-          { $push: { usersLiked: userId }, likes: data.likes + 1 }
-        )
-          .then(() =>
-            res.status(200).json({ message: "les likes sont été mis à jour" })
-          )
-          .catch((err) => {
-            res.status(500).json({ message: err });
-          });
+        res.status(403).json({ message: "Utilisateur l'a déjà likée" });
+        break;
+
+      //user unlike the sauce
+      case 0:
+        sauceObj.usersLiked = sauceObj.usersLiked.filter(
+          (id) => id._id.toString() !== userId
+        );
+        sauceObj.likes = sauceObj.usersLiked.length;
+        sauceObj
+          .save()
+          .then(() => res.status(200).json({ message: "Unliké" }))
+          .catch((err) => res.status(500).json({ message: err }));
+        break;
+
+      //user dislike the sauce
+      case -1:
+        const newUsersDislikeArr = sauceObj.usersDisliked.push(userId);
+        sauceObj.usersDisliked = newUsersDislikeArr;
+        sauceObj.dislikes = newUsersDislikeArr.length;
+        sauceObj.usersLiked = newUsersLikedArr;
+        sauceObj.likes = newUsersLikedArr.length;
+        sauceObj
+          .save()
+          .then(() => res.status(200).json({ message: "Disliké" }))
+          .catch((err) => res.status(500).json({ message: err }));
         break;
 
       default:
-        console.log("action undefined");
+        res.status(406).json({ message: "l'action indéfiniee" });
     }
-  });
+  }
+
+  //if user disliked this sauce already
+  if (userDislikedBefore === true) {
+    switch (like) {
+      //user like the sauce
+      case 1:
+        const newUsersDislikeArr = sauceObj.usersDisliked.filter(
+          (id) => id == userId
+        );
+        const newUsersLikedArr = sauceObj.usersLiked.push(userId);
+        sauceObj.usersDisliked = newUsersDislikeArr;
+        sauceObj.dislikes = newUsersDislikeArr.length;
+        sauceObj.usersLiked = newUsersLikedArr;
+        sauceObj.likes = newUsersLikedArr.length;
+        sauceObj
+          .save()
+          .then(() => res.status(200).json({ message: "Liké" }))
+          .catch((err) => res.status(500).json({ message: err }));
+        break;
+
+      //user undislike the sauce
+      case 0:
+        sauceObj.usersDisliked = newUsersDislikeArr;
+        sauceObj.dislikes = newUsersDislikeArr.length;
+        sauceObj
+          .save()
+          .then(() => res.status(200).json({ message: "Unliké" }))
+          .catch((err) => res.status(500).json({ message: err }));
+        break;
+
+      //user wanna dislike the sauce again => reject
+      case -1:
+        res.status(403).json({ message: "Utilisateur l'a déjà dislikée" });
+        break;
+
+      default:
+        res.status(406).json({ message: "l'action indéfiniee" });
+    }
+  }
+
+  if (!userLikedBefore && !userDislikedBefore) {
+    switch (like) {
+      //like the sauce
+      case 1:
+        sauceObj.usersLiked.push(userId);
+        sauceObj.likes = sauceObj.usersLiked.length;
+        sauceObj
+          .save()
+          .then(() => res.status(200).json({ message: "Liké" }))
+          .catch((err) => res.status(500).json({ message: err }));
+
+        break;
+
+      //dislike the sauce
+      case -1:
+        sauceObj.usersDisliked.push(userId);
+        sauceObj.dislikes = sauceObj.usersDisliked.length;
+        sauceObj
+          .save()
+          .then(() => res.status(200).json({ message: "Disliké" }))
+          .catch((err) => res.status(500).json({ message: err }));
+
+        console.log("sauce updated");
+        break;
+
+      default:
+        res.status(406).json({ message: "l'action indéfiniee" });
+    }
+  }
 };
