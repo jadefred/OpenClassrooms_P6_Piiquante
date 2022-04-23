@@ -100,22 +100,24 @@ exports.likeSauce = async (req, res, next) => {
   const userId = req.body.userId;
   const sauceId = req.params.id;
 
+  //get sauce info by its id
   const sauceObj = await Sauce.findById({ _id: sauceId }).catch((err) =>
     res.status(500).json({ message: err })
   );
 
+  //check if the user was already reacted to the sauce
   const userLikedBefore = sauceObj.usersLiked.includes(userId);
   const userDislikedBefore = sauceObj.usersDisliked.includes(userId);
 
   //if user liked this sauce already
   if (userLikedBefore === true) {
     switch (like) {
-      //user wanna like it again => reject (ok)
+      //user wanna like it again => reject
       case 1:
         res.status(403).json({ message: "Utilisateur l'a déjà likée" });
         break;
 
-      //user unlike the sauce (ok)
+      //user unlike the sauce
       case 0:
         sauceObj.usersLiked = sauceObj.usersLiked.filter(
           (id) => id._id.toString() !== userId
@@ -127,16 +129,21 @@ exports.likeSauce = async (req, res, next) => {
           .catch((err) => res.status(500).json({ message: err }));
         break;
 
-      //user dislike the sauce
+      //user change like to dislike
       case -1:
-        const newUsersDislikeArr = sauceObj.usersDisliked.push(userId);
-        sauceObj.usersDisliked = newUsersDislikeArr;
-        sauceObj.dislikes = newUsersDislikeArr.length;
-        sauceObj.usersLiked = newUsersLikedArr;
-        sauceObj.likes = newUsersLikedArr.length;
+        sauceObj.usersLiked = sauceObj.usersLiked.filter(
+          (id) => id._id.toString() !== userId
+        );
+        sauceObj.likes = sauceObj.usersLiked.length;
+        sauceObj.usersDisliked.push(userId);
+        sauceObj.dislikes = sauceObj.usersDisliked.length;
         sauceObj
           .save()
-          .then(() => res.status(200).json({ message: "Disliké" }))
+          .then(() =>
+            res
+              .status(200)
+              .json({ message: "Utilisateur a changé son like à dislike" })
+          )
           .catch((err) => res.status(500).json({ message: err }));
         break;
 
@@ -148,23 +155,25 @@ exports.likeSauce = async (req, res, next) => {
   //if user disliked this sauce already
   if (userDislikedBefore === true) {
     switch (like) {
-      //user like the sauce
+      //user change dislike to like
       case 1:
-        const newUsersDislikeArr = sauceObj.usersDisliked.filter(
-          (id) => id == userId
+        sauceObj.usersDisliked = sauceObj.usersDisliked.filter(
+          (id) => id._id.toString() !== userId
         );
-        const newUsersLikedArr = sauceObj.usersLiked.push(userId);
-        sauceObj.usersDisliked = newUsersDislikeArr;
-        sauceObj.dislikes = newUsersDislikeArr.length;
-        sauceObj.usersLiked = newUsersLikedArr;
-        sauceObj.likes = newUsersLikedArr.length;
+        sauceObj.dislikes = sauceObj.usersDisliked.length;
+        sauceObj.usersLiked.push(userId);
+        sauceObj.likes = sauceObj.usersLiked.length;
         sauceObj
           .save()
-          .then(() => res.status(200).json({ message: "Liké" }))
+          .then(() =>
+            res
+              .status(200)
+              .json({ message: "Utilisateur a changé son dislike à like" })
+          )
           .catch((err) => res.status(500).json({ message: err }));
         break;
 
-      //user undislike the sauce (ok)
+      //user undislike the sauce
       case 0:
         sauceObj.usersDisliked = sauceObj.usersDisliked.filter(
           (id) => id._id.toString() !== userId
@@ -172,7 +181,7 @@ exports.likeSauce = async (req, res, next) => {
         sauceObj.dislikes = sauceObj.usersDisliked.length;
         sauceObj
           .save()
-          .then(() => res.status(200).json({ message: "Unliké" }))
+          .then(() => res.status(200).json({ message: "Undisliké" }))
           .catch((err) => res.status(500).json({ message: err }));
         break;
 
@@ -186,9 +195,10 @@ exports.likeSauce = async (req, res, next) => {
     }
   }
 
+  //haven't give like or dislike before
   if (!userLikedBefore && !userDislikedBefore) {
     switch (like) {
-      //like the sauce (ok)
+      //like the sauce
       case 1:
         sauceObj.usersLiked.push(userId);
         sauceObj.likes = sauceObj.usersLiked.length;
@@ -199,7 +209,7 @@ exports.likeSauce = async (req, res, next) => {
 
         break;
 
-      //dislike the sauce (ok)
+      //dislike the sauce
       case -1:
         sauceObj.usersDisliked.push(userId);
         sauceObj.dislikes = sauceObj.usersDisliked.length;
