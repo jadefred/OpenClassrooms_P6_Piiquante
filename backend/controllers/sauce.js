@@ -1,7 +1,5 @@
 const Sauce = require("../models/sauce");
-const User = require("../models/user");
 const fs = require("fs");
-const mongoose = require("mongoose");
 
 exports.getAllSauces = (req, res, next) => {
   Sauce.find()
@@ -9,7 +7,7 @@ exports.getAllSauces = (req, res, next) => {
     .catch((err) => res.status(500).json({ message: err }));
 };
 
-exports.createSauce = async (req, res, next) => {
+exports.createSauce = (req, res, next) => {
   const sauceObj = JSON.parse(req.body.sauce);
   const imageUrl = `${req.protocol}://${req.get("host")}/${req.file.path}`;
 
@@ -20,53 +18,54 @@ exports.createSauce = async (req, res, next) => {
     dislikes: 0,
   });
 
-  await newSauce
+  newSauce
     .save()
     .then(() => res.status(201).json("Sauce enregistrée !"))
     .catch((err) => res.status(500).json({ message: err }));
 };
 
-exports.getOneSauce = (req, res, next) => {
-  Sauce.findById(req.params.id, (err, data) => {
-    if (err) {
-      res.status(500).json({ message: error });
-    }
-    res.status(200).json(data);
-  });
+exports.getOneSauce = async (req, res, next) => {
+  try {
+    const sauceObj = await Sauce.findById(req.params.id);
+    res.status(200).json(sauceObj);
+  } catch (err) {
+    res.status(500).json({ message: error });
+  }
 };
 
-exports.modifySauce = (req, res, next) => {
-  let sauceObj = {};
+exports.modifySauce = async (req, res, next) => {
+  let sauceObj = await Sauce.findById(req.params.id).catch((err) =>
+    res.status(500).json({ message: err })
+  );
 
-  //check if req.file exist
-  //if yes => delete old image in server by search sauce's id, save new req.body and image url to sauceObj
-  //if no => get all req.body and save to sauceObj
-  function checkFile() {
-    if (req.file) {
-      Sauce.findById({ _id: req.params.id }, (err, data) => {
-        if (err) {
-          res.status(500).json({ message: err });
-        }
-        const lastPartUrl = data.imageUrl.split("/").pop();
-        fs.unlink(`images/${lastPartUrl}`, (err) => {
-          if (err) {
-            console.log("failed to delete local image:" + err);
-          } else {
-            console.log("successfully deleted local image");
-          }
-        });
-      });
-
-      sauceObj = {
-        ...JSON.parse(req.body.sauce),
-        imageUrl: `${req.protocol}://${req.get("host")}/${req.file.path}`,
-      };
-    } else {
-      sauceObj = { ...req.body };
-    }
+  //if sauce id is invalid
+  if (sauceObj === null) {
+    res.status(404).json({ message: "Aucune sauce a été trouvée" });
   }
 
-  checkFile();
+  //check if the modification has changed the sauce's image
+  if (req.file) {
+    Sauce.findById({ _id: req.params.id }, (err, data) => {
+      if (err) {
+        res.status(500).json({ message: err });
+      }
+      const lastPartUrl = data.imageUrl.split("/").pop();
+      fs.unlink(`images/${lastPartUrl}`, (err) => {
+        if (err) {
+          console.log("failed to delete local image:" + err);
+        } else {
+          console.log("successfully deleted local image");
+        }
+      });
+    });
+
+    sauceObj = {
+      ...JSON.parse(req.body.sauce),
+      imageUrl: `${req.protocol}://${req.get("host")}/${req.file.path}`,
+    };
+  } else {
+    sauceObj = { ...req.body };
+  }
 
   //update DB
   Sauce.updateOne({ _id: req.params.id }, { ...sauceObj })
@@ -75,6 +74,7 @@ exports.modifySauce = (req, res, next) => {
 };
 
 exports.deleteSauce = async (req, res, next) => {
+  //search sauce by id, make function of delete image and data in DB await before return the response
   const sauceObj = await Sauce.findById(req.params.id).catch((err) =>
     res.status(500).json({ message: err })
   );
