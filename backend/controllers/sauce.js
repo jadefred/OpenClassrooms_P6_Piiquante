@@ -74,25 +74,26 @@ exports.modifySauce = (req, res, next) => {
     .catch((err) => res.status(500).json({ message: err }));
 };
 
-exports.deleteSauce = (req, res, next) => {
-  //find image url by sauce's id, then delete its photo in server
-  Sauce.findById({ _id: req.params.id }, (err, data) => {
+exports.deleteSauce = async (req, res, next) => {
+  const sauceObj = await Sauce.findById(req.params.id).catch((err) =>
+    res.status(500).json({ message: err })
+  );
+
+  const lastPartUrl = sauceObj.imageUrl.split("/").pop();
+
+  await fs.unlink(`images/${lastPartUrl}`, (err) => {
     if (err) {
-      res.status(500).json({ message: err });
+      console.log("failed to delete local image:" + err);
+    } else {
+      console.log("successfully deleted local image");
     }
-    const lastPartUrl = data.imageUrl.split("/").pop();
-    fs.unlink(`images/${lastPartUrl}`, (err) => {
-      if (err) {
-        console.log("failed to delete local image:" + err);
-      } else {
-        console.log("successfully deleted local image");
-      }
-    });
   });
 
-  Sauce.deleteOne({ _id: req.params.id })
-    .then(() => res.status(204).json({ message: "la sauce à été supprimé" }))
-    .catch((err) => res.status(500).json({ message: err }));
+  await Sauce.deleteOne({ _id: req.params.id }).catch((err) =>
+    res.status(500).json({ message: err })
+  );
+
+  return res.status(204).json({ message: "La sauce a été supprimée" });
 };
 
 exports.likeSauce = async (req, res, next) => {
