@@ -20,16 +20,22 @@ exports.createSauce = (req, res, next) => {
 
   newSauce
     .save()
-    .then(() => res.status(201).json("Sauce enregistrée !"))
+    .then(() => res.status(201).json({ message: "Sauce enregistrée !" }))
     .catch((err) => res.status(500).json({ message: err }));
 };
 
 exports.getOneSauce = async (req, res, next) => {
   try {
     const sauceObj = await Sauce.findById(req.params.id);
+
+    //if user entered sauce id not exist (eg deleted) will get 404
+    if (sauceObj === null) {
+      res.status(404).json({ message: "Sauce non trouvée" });
+    }
+
     res.status(200).json(sauceObj);
   } catch (err) {
-    res.status(500).json({ message: error });
+    res.status(500).json({ error: err });
   }
 };
 
@@ -69,7 +75,7 @@ exports.modifySauce = async (req, res, next) => {
 
   //update DB
   Sauce.updateOne({ _id: req.params.id }, { ...sauceObj })
-    .then(() => res.status(200).json("la sauce a été mise à jour"))
+    .then(() => res.status(200).json({ message: "la sauce a été mise à jour" }))
     .catch((err) => res.status(500).json({ message: err }));
 };
 
@@ -78,6 +84,11 @@ exports.deleteSauce = async (req, res, next) => {
   const sauceObj = await Sauce.findById(req.params.id).catch((err) =>
     res.status(500).json({ message: err })
   );
+
+  //if no sauce is found
+  if (sauceObj === null) {
+    res.status(404).json({ message: "Aucune sauce a été trouvée" });
+  }
 
   const lastPartUrl = sauceObj.imageUrl.split("/").pop();
 
