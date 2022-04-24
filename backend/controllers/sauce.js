@@ -21,7 +21,7 @@ exports.createSauce = (req, res, next) => {
   newSauce
     .save()
     .then(() => res.status(201).json({ message: "Sauce enregistrée !" }))
-    .catch((err) => res.status(500).json({ message: err }));
+    .catch((err) => res.status(500).json({ error: err }));
 };
 
 exports.getOneSauce = async (req, res, next) => {
@@ -30,7 +30,7 @@ exports.getOneSauce = async (req, res, next) => {
 
     //if user entered sauce id not exist (eg deleted) will get 404
     if (sauceObj === null) {
-      res.status(404).json({ message: "Sauce non trouvée" });
+      res.status(404).json({ error: "Sauce non trouvée" });
     }
 
     res.status(200).json(sauceObj);
@@ -41,12 +41,12 @@ exports.getOneSauce = async (req, res, next) => {
 
 exports.modifySauce = async (req, res, next) => {
   let sauceObj = await Sauce.findById(req.params.id).catch((err) =>
-    res.status(500).json({ message: err })
+    res.status(500).json({ error: err })
   );
 
   //if sauce id is invalid
   if (sauceObj === null) {
-    res.status(404).json({ message: "Aucune sauce a été trouvée" });
+    res.status(404).json({ error: "Aucune sauce a été trouvée" });
   }
 
   //check if the modification has changed the sauce's image
@@ -76,18 +76,18 @@ exports.modifySauce = async (req, res, next) => {
   //update DB
   Sauce.updateOne({ _id: req.params.id }, { ...sauceObj })
     .then(() => res.status(200).json({ message: "la sauce a été mise à jour" }))
-    .catch((err) => res.status(500).json({ message: err }));
+    .catch((err) => res.status(500).json({ error: err }));
 };
 
 exports.deleteSauce = async (req, res, next) => {
   //search sauce by id, make function of delete image and data in DB await before return the response
   const sauceObj = await Sauce.findById(req.params.id).catch((err) =>
-    res.status(500).json({ message: err })
+    res.status(500).json({ error: err })
   );
 
   //if no sauce is found
   if (sauceObj === null) {
-    res.status(404).json({ message: "Aucune sauce a été trouvée" });
+    res.status(404).json({ error: "Aucune sauce a été trouvée" });
   }
 
   const lastPartUrl = sauceObj.imageUrl.split("/").pop();
@@ -101,7 +101,7 @@ exports.deleteSauce = async (req, res, next) => {
   });
 
   await Sauce.deleteOne({ _id: req.params.id }).catch((err) =>
-    res.status(500).json({ message: err })
+    res.status(500).json({ error: err })
   );
 
   return res.status(204).json({ message: "La sauce a été supprimée" });
@@ -114,7 +114,7 @@ exports.likeSauce = async (req, res, next) => {
 
   //get sauce info by its id
   const sauceObj = await Sauce.findById({ _id: sauceId }).catch((err) =>
-    res.status(500).json({ message: err })
+    res.status(500).json({ error: err })
   );
 
   //check if the user was already reacted to the sauce
@@ -126,7 +126,7 @@ exports.likeSauce = async (req, res, next) => {
     switch (like) {
       //user wanna like it again => reject
       case 1:
-        res.status(403).json({ message: "Utilisateur l'a déjà likée" });
+        res.status(409).json({ error: "Utilisateur l'a déjà likée" });
         break;
 
       //user unlike the sauce
@@ -138,7 +138,7 @@ exports.likeSauce = async (req, res, next) => {
         sauceObj
           .save()
           .then(() => res.status(200).json({ message: "Unliké" }))
-          .catch((err) => res.status(500).json({ message: err }));
+          .catch((err) => res.status(500).json({ error: err }));
         break;
 
       //user change like to dislike
@@ -156,11 +156,11 @@ exports.likeSauce = async (req, res, next) => {
               .status(200)
               .json({ message: "Utilisateur a changé son like à dislike" })
           )
-          .catch((err) => res.status(500).json({ message: err }));
+          .catch((err) => res.status(500).json({ error: err }));
         break;
 
       default:
-        res.status(406).json({ message: "l'action indéfiniee" });
+        res.status(406).json({ error: "l'action indéfiniee" });
     }
   }
 
@@ -182,7 +182,7 @@ exports.likeSauce = async (req, res, next) => {
               .status(200)
               .json({ message: "Utilisateur a changé son dislike à like" })
           )
-          .catch((err) => res.status(500).json({ message: err }));
+          .catch((err) => res.status(500).json({ error: err }));
         break;
 
       //user undislike the sauce
@@ -194,16 +194,16 @@ exports.likeSauce = async (req, res, next) => {
         sauceObj
           .save()
           .then(() => res.status(200).json({ message: "Undisliké" }))
-          .catch((err) => res.status(500).json({ message: err }));
+          .catch((err) => res.status(500).json({ error: err }));
         break;
 
       //user wanna dislike the sauce again => reject
       case -1:
-        res.status(403).json({ message: "Utilisateur l'a déjà dislikée" });
+        res.status(409).json({ error: "Utilisateur l'a déjà dislikée" });
         break;
 
       default:
-        res.status(406).json({ message: "l'action indéfiniee" });
+        res.status(406).json({ error: "l'action indéfiniee" });
     }
   }
 
@@ -217,7 +217,7 @@ exports.likeSauce = async (req, res, next) => {
         sauceObj
           .save()
           .then(() => res.status(200).json({ message: "Liké" }))
-          .catch((err) => res.status(500).json({ message: err }));
+          .catch((err) => res.status(500).json({ error: err }));
 
         break;
 
@@ -228,12 +228,12 @@ exports.likeSauce = async (req, res, next) => {
         sauceObj
           .save()
           .then(() => res.status(200).json({ message: "Disliké" }))
-          .catch((err) => res.status(500).json({ message: err }));
+          .catch((err) => res.status(500).json({ error: err }));
 
         break;
 
       default:
-        res.status(406).json({ message: "l'action indéfiniee" });
+        res.status(406).json({ error: "l'action indéfiniee" });
     }
   }
 };
