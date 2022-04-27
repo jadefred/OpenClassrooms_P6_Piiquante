@@ -49,34 +49,52 @@ exports.modifySauce = async (req, res, next) => {
     res.status(404).json({ error: "Aucune sauce a été trouvée" });
   }
 
-  //check if the modification has changed the sauce's image
-  if (req.file) {
-    Sauce.findById({ _id: req.params.id }, (err, data) => {
+  //function to delete uploaded image by its file name
+  function deleteImage(url) {
+    fs.unlink(`images/${url}`, (err) => {
       if (err) {
-        res.status(500).json({ message: err });
+        console.log("failed to delete local image:" + err);
+      } else {
+        console.log("successfully deleted local image");
       }
-      const lastPartUrl = data.imageUrl.split("/").pop();
-      fs.unlink(`images/${lastPartUrl}`, (err) => {
-        if (err) {
-          console.log("failed to delete local image:" + err);
-        } else {
-          console.log("successfully deleted local image");
-        }
-      });
     });
-
-    sauceObj = {
-      ...JSON.parse(req.body.sauce),
-      imageUrl: `${req.protocol}://${req.get("host")}/${req.file.path}`,
-    };
-  } else {
-    sauceObj = { ...req.body };
   }
 
-  //update DB
-  Sauce.updateOne({ _id: req.params.id }, { ...sauceObj })
-    .then(() => res.status(200).json({ message: "la sauce a été mise à jour" }))
-    .catch((err) => res.status(500).json({ error: err }));
+  //check if the modification has changed the sauce's image
+  if (req.file) {
+    //check if userId is matched with the sauce creator userId
+    if (JSON.parse(req.body.sauce).userId != sauceObj.userId) {
+      //if not, delete uploaded image and throw error
+      deleteImage(req.file.filename);
+      res.status(401).json({ error: "L'action non autorisée" });
+    } else {
+      //if yes, delete old image and update DB
+      const lastPartUrl = sauceObj.imageUrl.split("/").pop();
+      deleteImage(lastPartUrl);
+
+      sauceObj = {
+        ...JSON.parse(req.body.sauce),
+        imageUrl: `${req.protocol}://${req.get("host")}/${req.file.path}`,
+      };
+
+      updateDB();
+    }
+  } else {
+    if (sauceObj.userId != req.body.userId) {
+      res.status(401).json({ error: "L'action non autorisée" });
+    } else {
+      sauceObj = { ...req.body };
+      updateDB();
+    }
+  }
+
+  function updateDB() {
+    Sauce.updateOne({ _id: req.params.id }, { ...sauceObj })
+      .then(() =>
+        res.status(200).json({ message: "la sauce a été mise à jour" })
+      )
+      .catch((err) => res.status(500).json({ error: err }));
+  }
 };
 
 exports.deleteSauce = async (req, res, next) => {
